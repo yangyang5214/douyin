@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-import argparse
 import logging
 import os
 import subprocess
@@ -41,7 +40,7 @@ def cut_video(mp4_file: str, parts: list):
     """
     result_file_name = '{}.mp4'.format(datetime.now().strftime('%Y%m%d_%H%M%S'))
     for index in range(0, len(parts), 2):
-        cmd = 'MP4Box -splitz {}:{} {}'.format(str_to_second(parts[index]), str_to_second(parts[index + 1]), mp4_file)
+        cmd = 'MP4Box -splitx {}:{} {}'.format(str_to_second(parts[index]), str_to_second(parts[index + 1]), mp4_file)
         os.system(cmd)
     os.chdir(os.path.dirname(mp4_file))
     r, _ = subprocess.Popen('ls -t | grep "{}"'.format(os.path.basename(mp4_file).replace('.mp4', '_')), stdout=subprocess.PIPE, shell=True).communicate()
@@ -53,26 +52,39 @@ def cut_video(mp4_file: str, parts: list):
     return result_file_name
 
 
-def main(input_file: str, parts: list):
+def main(input_file: str, parts: list, mp3_file: str):
     merged_mp4 = cut_video(input_file, parts)
+
+    # add bg music
+    os.system('ffmpeg -i {} -i {} -filter_complex "[0:a][1:a]amerge=inputs=2[a]" -map 0:v -map "[a]" -c:v copy -c:a libvorbis -ac 2 -shortest out_{}'
+              .format(merged_mp4, mp3_file, merged_mp4))
 
     dir_name = os.path.dirname(input_file)
     os.chdir(dir_name)
     result_file = 'result_{}'.format(merged_mp4)
-    final_cmd = '''ffmpeg -loop 1 -i /Users/beer/beer/douyin/cheng_you_qing/bg.png -i {} -filter_complex "[1:v]scale=1080:-1[fg];[0:v][fg]overlay=(W-w)/2:(H-h)/2:shortest=1,drawtext=text='我可能不会爱你':fontfile=/Users/beer/beer/douyin/cheng_you_qing/kai.ttf:x=(
+
+    # add bg and sub-title
+    final_cmd = '''ffmpeg -loop 1 -i /Users/beer/beer/douyin/cheng_you_qing/bg.png -i out_{} -filter_complex "[1:v]scale=1080:-1[fg];[0:v][fg]overlay=(W-w)/2:(H-h)/2:shortest=1,drawtext=text='我可能不会爱你':fontfile=/Users/beer/beer/douyin/cheng_you_qing/kai.ttf:x=(
     w-text_w)/2:y=130:fontsize=60:fontcolor=red" -y {}'''.format(merged_mp4, result_file)
     os.system(final_cmd)
+
+    os.system('rm {} out_{}'.format(merged_mp4, merged_mp4))
 
     logging.info("final mp4 file: {}".format(os.path.join(dir_name, result_file)))
 
 
 if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument('-t', '--target_file', type=str, help='目标 mp4 文件', required=True)
-    ap.add_argument('-l', '--part_list', nargs="+", help='需要剪辑的片段. 00:10:00 00:16:00 00:20:00 00:21:00', required=True)
-    args = ap.parse_args()
+    # ap = argparse.ArgumentParser()
+    # ap.add_argument('-t', '--target_file', type=str, help='目标 mp4 文件', required=True)
+    # ap.add_argument('-l', '--part_list', nargs="+", help='需要剪辑的片段. 00:10:00 00:16:00 00:20:00 00:21:00', required=True)
+    # args = ap.parse_args()
+    #
+    # if len(args.part_list) % 2 != 0:
+    #     logging.error("--part_list 参数，应该是成对的")
+    #     exit()
+    # main(args.target_file, args.part_list)
 
-    if len(args.part_list) % 2 != 0:
-        logging.error("--part_list 参数，应该是成对的")
-        exit()
-    main(args.target_file, args.part_list)
+    target_file = '/Users/beer/Downloads/我可能不會愛你/In.Time.With.You.Uncut.E06.720p.mp4'
+    parts = ['00:45:00', '00:50:13']
+    mp3_file = '/Users/beer/beer/music/shi_jian_dou_qu_na_le.mp3'
+    main(target_file, parts, mp3_file)
