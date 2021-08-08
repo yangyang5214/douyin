@@ -1,6 +1,6 @@
 # douyin
 
-> 代码实现视频剪辑。。。
+> 代码实现视频剪辑。。。(没必要搞了，不是自创的都会被检测到的，处分花时间自己讲解)
 
 ### liu_jin_sui_yue
 
@@ -22,7 +22,7 @@
 ### cheng_you_qing
 
 ```shell
-python3 ./cheng_you_qing/main.py
+python3 ./cheng_you_qing/main_process.py
 ```
 
 电视剧 《我可能不会爱你》
